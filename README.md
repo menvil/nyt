@@ -32,12 +32,13 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-5. Configure your NYT API credentials in `.env`:
+5. Configure your NYT API credentials in `.env` if you want to use your own:
 ```env
 NYT_API_KEY=your_api_key_here
 NYT_BASE_URL=https://api.nytimes.com/svc/books/v3
 NYT_CACHE_TTL=3600
 ```
+Currenlty .env has valid data
 
 ## Configuration
 
