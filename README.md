@@ -63,6 +63,9 @@ php artisan test
 ```
 
 ##Running App
+
+To run application
+
 ```bash
 php artisan serve --port=8080 
 ```
