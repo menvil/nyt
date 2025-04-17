@@ -62,7 +62,7 @@ To run the test suite:
 php artisan test
 ```
 
-##Running App
+## Running App
 
 To run application
 
