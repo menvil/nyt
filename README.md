@@ -18,8 +18,16 @@ cd nyt
 ```
 
 2. Install dependencies:
+
+Without docker
 ```bash
 composer install
+```
+
+If you are using docker start the containers:
+```bash
+sail up -d
+sail composer install
 ```
 
 3. Copy the environment file:
@@ -27,9 +35,15 @@ composer install
 cp .env.example .env
 ```
 
+
 4. Generate application key:
 ```bash
 php artisan key:generate
+```
+
+If you are using docker start the containers:
+```bash
+sail artisan key:generate
 ```
 
 5. Configure your NYT API credentials in `.env` if you want to use your own:
@@ -62,16 +76,56 @@ To run the test suite:
 ```bash
 php artisan test
 ```
+If you are using docker start the containers:
+```bash
+sail php artisan test
+```
+
+To run the test suite with coverage report:
+
+```bash
+XDEBUG_MODE=coverage php artisan test --coverage
+```
+If you are using docker start the containers:
+```bash
+sail php artisan test --coverage
+```
 
 ## Running App
 
-To run application
+To run application without docker
 
 ```bash
 php artisan serve --port=8080 
 ```
+If you are using docker you don't need to do anything
+
+## Accessing the Application
+
+1. Start the application:
+```bash
+sail up -d
+```
+
+2. The application will be available at:
+- Main URL: `http://localhost:8080`
+- API Endpoint: `http://localhost:8080/api/v1/best-sellers/history`
+
+Example API requests for docker usage:
+```bash
+# Get best sellers history
+curl http://localhost:8080/api/v1/best-sellers/history
+
+# Filter by author
+curl http://localhost:8080/api/v1/best-sellers/history?author=Stephen+King
+
+# Filter by ISBN
+curl http://localhost:8080/api/v1/best-sellers/history?isbn[]=0399169274
+```
+
+Note: The port (8080) can be configured in your .env file using the APP_PORT variable.
 
 ## API Endpoints
 
-### Get Best Sellers History
+### Get Best Sellers History is you are not usinf docker
 http://127.0.0.1:8080/api/v1/best-sellers/history

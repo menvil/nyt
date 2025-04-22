@@ -14,6 +14,8 @@ use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Illuminate\Http\Client\PendingRequest;
 use Mockery;
 use Closure;
+use Illuminate\Http\Client\ConnectionException;
+use Exception;
 
 class NewYorkTimesServiceTest extends TestCase
 {
@@ -39,6 +41,41 @@ class NewYorkTimesServiceTest extends TestCase
         ]);
     }
     
+    /**
+     * @return \Mockery\MockInterface|\App\Services\NewYorkTimesService
+     */
+    protected function prepareMock()
+    {
+        // Mock the client() method of NewYorkTimesService directly, enabling protected mocking
+        $service = Mockery::mock(NewYorkTimesService::class)
+            ->makePartial()
+            ->shouldAllowMockingProtectedMethods();
+
+        // Use reflection to set the private properties
+        $reflection = new \ReflectionClass($service);
+        
+        // Set apiKey
+        $apiKeyProperty = $reflection->getProperty('apiKey');
+        $apiKeyProperty->setAccessible(true);
+        $apiKeyProperty->setValue($service, 'dummy_api_key');
+
+        // Set baseUrl
+        $baseUrlProperty = $reflection->getProperty('baseUrl');
+        $baseUrlProperty->setAccessible(true);
+        $baseUrlProperty->setValue($service, 'some_base_url');
+
+        // Set cacheTtl
+        $cacheTtlProperty = $reflection->getProperty('cacheTtl');
+        $cacheTtlProperty->setAccessible(true);
+        $cacheTtlProperty->setValue($service, 0);
+
+        // Set endpoints
+        $endpointsProperty = $reflection->getProperty('endpoints');
+        $endpointsProperty->setAccessible(true);
+        $endpointsProperty->setValue($service, ['best_sellers_history' => 'test']);
+
+        return $service;
+    }
 
     #[Test]
     public function it_can_get_best_sellers_history()
@@ -81,36 +118,13 @@ class NewYorkTimesServiceTest extends TestCase
         $pendingRequestMock->shouldReceive('get')
             ->andThrow($exception);
 
-        // Mock the client() method of NewYorkTimesService directly, enabling protected mocking
-        $service = Mockery::mock(NewYorkTimesService::class)->makePartial()->shouldAllowMockingProtectedMethods();
-
-        // Use reflection to set the private $apiKey property
-        $reflection = new \ReflectionClass($service);
-        $apiKeyProperty = $reflection->getProperty('apiKey');
-        $apiKeyProperty->setAccessible(true);
-        $apiKeyProperty->setValue($service, 'dummy_api_key');
-
-        $reflection = new \ReflectionClass($service);
-        $apiKeyProperty = $reflection->getProperty('baseUrl');
-        $apiKeyProperty->setAccessible(true);
-        $apiKeyProperty->setValue($service, 'some_base_url');
-
-        $apiKeyProperty = $reflection->getProperty('cacheTtl');
-        $apiKeyProperty->setAccessible(true);
-        $apiKeyProperty->setValue($service, 0);
-
-        $apiKeyProperty = $reflection->getProperty('endpoints');
-        $apiKeyProperty->setAccessible(true);
-        $apiKeyProperty->setValue($service, ['best_sellers_history' => 'test']);
-
+        $service = $this->prepareMock();
         
         $service->shouldReceive('client')
             ->andReturn($pendingRequestMock);
 
-        // We expect this exception to be thrown
         $this->expectException(\Exception::class);
 
-        // Call the service method
         $service->getBestSellersHistory([]);
     }
 
@@ -139,10 +153,8 @@ class NewYorkTimesServiceTest extends TestCase
     #[Test]
     public function it_uses_cache_for_subsequent_requests()
     {
-        // Create the cache key that will be used
         $cacheKey = 'nyt_bestsellers_history:' . md5(serialize(['author' => 'Test']));
 
-        // Create a mock response
         Cache::shouldReceive('remember')
             ->twice()
             ->with($cacheKey, 3600, Closure::class)
@@ -167,7 +179,6 @@ class NewYorkTimesServiceTest extends TestCase
         $mockResponse1 = ['status' => 'OK', 'num_results' => 1, 'results' => [['title' => 'Book A']]];
         $mockResponse2 = ['status' => 'OK', 'num_results' => 1, 'results' => [['title' => 'Book B']]];
 
-         // Create a mock response
          Cache::shouldReceive('remember')
             ->once()
             ->with($cacheKeyA, 3600, Closure::class)
@@ -185,4 +196,23 @@ class NewYorkTimesServiceTest extends TestCase
         $this->assertEquals($resultA, $mockResponse1);
         $this->assertEquals($resultB, $mockResponse2);
     }
-} 
+
+    #[Test]
+    public function it_throws_exception_when_connection_exception_happened()
+    {
+        $service = $this->prepareMock();
+        $service->shouldReceive('client')->andThrow(ConnectionException::class);
+        $this->expectException(Exception::class);
+        $service->getBestSellersHistory([]);
+
+    }
+
+    #[Test]
+    public function it_throws_exception_when_general_exception_happened()
+    {
+        $service = $this->prepareMock();
+        $service->shouldReceive('client')->andThrow(Exception::class);
+        $this->expectException(Exception::class);
+        $service->getBestSellersHistory(['author' => 'test']);
+    }
+}

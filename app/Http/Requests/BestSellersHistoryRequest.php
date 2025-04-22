@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Rules\IsbnRule;
 
 class BestSellersHistoryRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class BestSellersHistoryRequest extends FormRequest
         return [
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|array',
-            'isbn.*' => ['nullable', 'string', 'regex:/^(?:\d{10}|\d{13})$/'],
+            'isbn.*' => ['nullable', 'string', new IsbnRule()],
             'title' => 'nullable|string|max:255',
             'offset' => 'nullable|integer|min:0|multiple_of:20',
         ];
@@ -37,7 +38,7 @@ class BestSellersHistoryRequest extends FormRequest
     {
         return [
             'offset.multiple_of' => 'The offset must be a multiple of 20.',
-            'isbn.*.regex' => 'Each ISBN must be a valid 10 or 13 digit number.',
+            'isbn.*' . '.' . 'isbn_rule' => 'Each ISBN must be a valid 10 or 13 digit number.',
         ];
     }
 

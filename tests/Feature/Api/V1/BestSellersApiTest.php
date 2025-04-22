@@ -50,7 +50,6 @@ class BestSellersApiTest extends TestCase
             ]);
     }
 
-
     /**
      * Create a properly validated request for testing
      */
@@ -88,6 +87,23 @@ class BestSellersApiTest extends TestCase
         $this->assertJson($response->getContent());
     }
     
+    #[Test]
+    public function it_handles_connection_exception_from_nyt_service()
+    {
+        $this->mock(NewYorkTimesService::class)
+            ->shouldReceive('getBestSellersHistory')
+            ->once()
+            ->andThrow(new \Exception('Failed to connect to the New York Times API.'));
+
+        $response = $this->getJson('/api/v1/best-sellers/history');
+
+        $response->assertStatus(500)
+            ->assertJson([
+                'status' => 'ERROR',
+                'message' => 'An error occurred while processing your request'
+            ]);
+    }
+
     #[Test]
     public function it_passes_author_parameter_to_service()
     {
@@ -193,19 +209,11 @@ class BestSellersApiTest extends TestCase
                     'offset' => ['The offset must be a multiple of 20.']
                 ]
             ]);
-        
-        // Test invalid ISBN format
-        $response = $this->getJson('/api/v1/best-sellers/history?isbn[]=invalid-isbn');
-        
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['isbn.0'])
-            ->assertJson([
-                'message' => 'Invalid request parameters',
-                'errors' => [
-                    'isbn.0' => ['Each ISBN must be a valid 10 or 13 digit number.']
-                ]
-            ]);
-        
+    }
+
+    #[Test]
+    public function it_validates_multiple_parameters()
+    {        
         // Test multiple validation errors
         $response = $this->getJson('/api/v1/best-sellers/history?offset=15&isbn[]=invalid');
         
@@ -215,8 +223,39 @@ class BestSellersApiTest extends TestCase
                 'message' => 'Invalid request parameters',
                 'errors' => [
                     'offset' => ['The offset must be a multiple of 20.'],
-                    'isbn.0' => ['Each ISBN must be a valid 10 or 13 digit number.']
+                    'isbn.0' => ['The ISBN must be a valid ISBN-10 or ISBN-13 number.']
                 ]
             ]);
+    }
+
+    #[Test]
+    public function it_validates_isbn_numbers()
+    {
+        $validIsbn10 = '0198534531';
+        $validIsbn10WithDash = '0-439-02348-3';
+        $validIsbn13 = '9780399169274';
+        $validIsbn13WithDash = '978-0-439-02348-1';
+        $invalidIsbn = '123456789';
+        $invalidIsbn2 = '1234567890';
+
+        $response = $this->getJson("/api/v1/best-sellers/history?isbn[]={$validIsbn10}");
+        $response->assertStatus(200);
+
+        $response = $this->getJson("/api/v1/best-sellers/history?isbn[]={$validIsbn10WithDash}");
+        $response->assertStatus(200);
+
+        $response = $this->getJson("/api/v1/best-sellers/history?isbn[]={$validIsbn13}");
+        $response->assertStatus(200);
+
+        $response = $this->getJson("/api/v1/best-sellers/history?isbn[]={$validIsbn13WithDash}");
+        $response->assertStatus(200);
+
+        $response = $this->getJson("/api/v1/best-sellers/history?isbn[]={$invalidIsbn}");
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['isbn.0']);
+
+        $response = $this->getJson("/api/v1/best-sellers/history?isbn[]={$invalidIsbn2}");
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['isbn.0']);
     }
 } 

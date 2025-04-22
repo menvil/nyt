@@ -23,10 +23,6 @@ class NewYorkTimesService
         $this->baseUrl = config('nyt.base_url');
         $this->endpoints = config('nyt.endpoints');
         $this->cacheTtl = config('nyt.cache_ttl');
-        
-        if (empty($this->apiKey)) {
-            throw new \RuntimeException('NYT API key is not configured');
-        }
     }
 
     /**
@@ -45,20 +41,19 @@ class NewYorkTimesService
         $cacheKey = 'nyt_bestsellers_history:' . md5(serialize($params));
         
         return Cache::remember($cacheKey, $this->cacheTtl, function () use ($params) {
-            
             try {
                 $response = $this->client()
                     ->get($this->baseUrl . $this->endpoints['best_sellers_history'], array_merge(['api-key' => $this->apiKey], $params));
                 $response->throwIf($response->failed());
+                
                 return $response->json();
-
             } catch (ConnectionException $e) {
                 Log::error('ConnectionException during request to NYT API', [
                     'status' => $e->getCode(),
                     'response' => $e?->response?->json(),
                     'exception' => $e->getMessage(),
                 ]);
-
+                
                 throw new Exception('Failed to connect to the New York Times API.');
             } catch (RequestException $e) {
                 
