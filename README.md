@@ -98,7 +98,7 @@ To run application without docker
 ```bash
 php artisan serve --port=8080 
 ```
-If you are using docker you don't need to do anything
+If you are using docker you don't need to do anything in this step. Go to next step
 
 ## Accessing the Application
 
@@ -127,5 +127,5 @@ Note: The port (8080) can be configured in your .env file using the APP_PORT var
 
 ## API Endpoints
 
-### Get Best Sellers History is you are not usinf docker
+### Get Best Sellers History is you are not using docker
 http://127.0.0.1:8080/api/v1/best-sellers/history
