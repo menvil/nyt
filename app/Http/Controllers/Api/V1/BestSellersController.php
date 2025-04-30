@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+//use App\Http\Controllers\Controller;
 use App\Http\Requests\BestSellersHistoryRequest;
 use App\Services\NewYorkTimesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Routing\Controller;
 
 class BestSellersController extends Controller
 {
